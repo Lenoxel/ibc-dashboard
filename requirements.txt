@@ -6,3 +6,4 @@ psycopg2
 rapidfuzz
 gspread
 oauth2client
+plotly
