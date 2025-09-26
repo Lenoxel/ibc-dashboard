@@ -1,12 +1,13 @@
 [server]
 headless = true
+fileWatcherType = "none"
 port = 8601
 enableCORS = false
 runOnSave = true
 
 [theme]
-primaryColor = "#4CAF50"          # Verde suave moderno
-backgroundColor = "#FFFFFF"       # Fundo branco clean
-secondaryBackgroundColor = "#F5F7FA"  # Cinza muito claro, quase branco
-textColor = "#2C3E50"             # Cinza-azulado elegante
-font = "sans serif"               # Fonte moderna e clean
+primaryColor = "#4CAF50"             # Verde suave moderno
+backgroundColor = "#FFFFFF"          # Fundo branco clean
+secondaryBackgroundColor = "#F5F7FA" # Cinza muito claro, quase branco
+textColor = "#2C3E50"                # Cinza-azulado elegante
+font = "sans serif"                  # Fonte moderna e clean
