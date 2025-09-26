@@ -1,9 +1,15 @@
 [server]
 headless = true
-fileWatcherType = "none"
-port = 8601
+port = 8501
+address = "0.0.0.0"
 enableCORS = false
+
+fileWatcherType = "auto"
 runOnSave = true
+
+[browser]
+serverAddress = "0.0.0.0"
+gatherUsageStats = true
 
 [theme]
 primaryColor = "#4CAF50"             # Verde suave moderno
