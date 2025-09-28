@@ -25,7 +25,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-tabs = ["Home", "Quantidade de Alunos por Classe", "Percentual de Alunos por Classe"]
+tabs = ["Home", "Quantidade de Membros por Classe", "Percentual de Membros por Classe"]
 
 tab1, tab2, tab3 = st.tabs(tabs)
 
@@ -96,11 +96,12 @@ with tab1:
     st.subheader("Membros e suas Turmas")
 
     df_member_classes_sorted = df_members_classes[
-        ["member_name", "class_name", "form_register_date"]
+        ["member_name", "class_name", "role", "form_register_date"]
     ].rename(
         columns={
             "member_name": "Membro",
             "class_name": "Classe",
+            "role": "Papel",
             "form_register_date": "Data de Registro",
         }
     )
@@ -132,25 +133,29 @@ with tab1:
         * 100
     )
 
+    df_aggregated_by_class = df_aggregated_by_class.sort_values(
+        by="percent_completed", ascending=False
+    )
+
     st.subheader("Resumo por Classe")
 
     st.text(
-        "Quantidade de alunos de cada classe que fizeram a atualização de cadastro."
+        "Quantidade de membros de cada classe que fizeram a atualização de cadastro."
     )
 
     st.dataframe(
         df_aggregated_by_class.rename(
             columns={
                 "class_name": "Nome da Classe",
-                "total_members": "Alunos na Classe",
-                "members_completed": "Alunos que Atualizaram",
-                "percent_completed": "Percentual de Alunos que Atualizaram",
+                "total_members": "Membros na Classe",
+                "members_completed": "Membros que Atualizaram",
+                "percent_completed": "Percentual de Membros que Atualizaram",
             }
         )
     )
 
 with tab2:
-    st.title("📊 Quantidade de Alunos por Classe")
+    st.title("📊 Quantidade de Membros por Classe")
 
     fig = px.bar(
         df_aggregated_by_class,
@@ -159,9 +164,9 @@ with tab2:
         orientation="h",
         color="members_completed",
         color_continuous_scale="Greens",
-        title="Quantidade de Alunos por Classe",
-        subtitle="Contagem de alunos que atualizaram o cadastro por classe",
-        labels={"members_completed": "Alunos na Classe", "class_name": "Classe"},
+        title="Quantidade de Membros por Classe",
+        subtitle="Contagem de Membros que atualizaram o cadastro por classe",
+        labels={"members_completed": "Membros na Classe", "class_name": "Classe"},
         text="members_completed",
     )
 
@@ -193,7 +198,7 @@ with tab2:
     st.plotly_chart(fig, use_container_width=True)
 
 with tab3:
-    st.title("📊 Percentual de Alunos por Classe")
+    st.title("📊 Percentual de Membros por Classe")
 
     fig2 = px.bar(
         df_aggregated_by_class,
@@ -202,8 +207,8 @@ with tab3:
         orientation="h",
         color="percent_completed",
         color_continuous_scale="Greens",
-        title="Percentual de Alunos por Classe",
-        subtitle="Percentual de alunos que atualizaram o cadastro por classe",
+        title="Percentual de Membros por Classe",
+        subtitle="Percentual de Membros que atualizaram o cadastro por classe",
         labels={"percent_completed": "Percentual (%)", "class_name": "Classe"},
         range_x=[0, 100],
         custom_data=["members_completed", "total_members"],
