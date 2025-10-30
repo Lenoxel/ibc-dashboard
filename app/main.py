@@ -14,16 +14,27 @@ st.set_page_config(
     page_title="Dashboard IBC", layout="wide", initial_sidebar_state="expanded"
 )
 
+# ...existing code...
 st.markdown(
     """
     <style>
     html, body, [class^="css"] {
         font-size: 1.25rem !important;
     }
+
+    [data-testid="stAppViewContainer"] .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+    }
+
+    .main .block-container {
+        padding-top: rem !important;
+    }
     </style>
-""",
+    """,
     unsafe_allow_html=True,
 )
+# ...existing code...
 
 tabs = ["Home", "Quantidade de Membros por Classe", "Percentual de Membros por Classe"]
 
@@ -229,11 +240,11 @@ with tab3:
 
     fig2.update_traces(
         texttemplate="%{x:.0f}% (%{customdata[0]} de %{customdata[1]} alunos)",
-        textposition="outside",
+        textposition="auto",
         textfont_size=22,
         textangle=0,
         marker_line_color="black",
-        hovertemplate="<b>%{y}</b><br>Percentual: %{x}<extra></extra>",
+        hovertemplate="<b>%{y}</b><br>Percentual: %{x:.2f}%<extra></extra>",
         hoverlabel=dict(font_size=16),
         marker=dict(
             color=df_aggregated_by_class["percent_completed"], colorscale="Greens"
