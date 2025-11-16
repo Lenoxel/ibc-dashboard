@@ -13,7 +13,7 @@ engine = init_connection()
 
 @st.cache_data(ttl=60)
 def get_members():
-    query = "SELECT id, name FROM core_member"
+    query = "SELECT id, name, last_updated_date FROM core_member"
     with engine.connect() as conn:
         return pd.read_sql(query, conn)
 
