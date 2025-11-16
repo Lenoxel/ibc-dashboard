@@ -41,12 +41,18 @@ tabs = ["Home", "Quantidade de Membros por Classe", "Percentual de Membros por C
 tab1, tab2, tab3 = st.tabs(tabs)
 
 with tab1:
-    st.title("🔎 Matching de Nomes - Form x Banco")
+    st.title("🔎 Atualização de cadastro")
 
     df_members = get_members()
+    df_member_names = df_members["name"].tolist()
+
     df_forms = get_google_form()
 
-    match_names_threshold = 50
+    match_names_threshold = 30
+
+    score_threshold = st.slider(
+        "Similaridade mínima", 0, 100, match_names_threshold, key="score_threshold"
+    )
 
     results = []
     found_members = []
@@ -55,17 +61,63 @@ with tab1:
         form_row_person_name = form_row["Nome"].strip()
 
         form_row_register_date = form_row["Carimbo de data/hora"]
+        form_row_phone_number = form_row["Número de telefone (WhatsApp)"]
+        form_row_birth_date = form_row["Data de nascimento"]
+        form_row_conversion_date = form_row["Data de conversão"]
+        form_row_baptism_date = form_row["Data de batismo"]
+        form_row_email = form_row["E-mail"]
+        form_row_picture_url = form_row["Foto"]
+        form_row_is_married = form_row["É casado?"]
+        form_row_marriage_date = form_row["Data de casamento"]
+        form_row_partner_name = form_row["Nome do cônjuge"]
+        form_row_partner_is_member = form_row["Cônjuge é membro ou congregado da IBC?"]
 
         matched_name, score = match_names(
-            form_row_person_name, df_members["name"].tolist(), match_names_threshold
+            form_row_person_name, df_member_names, match_names_threshold
         )
+
+        member_on_db = df_members.loc[df_members["name"] == matched_name]
+
+        member_on_db_last_update_date = None
+        if not member_on_db.empty:
+            raw_val = member_on_db["last_updated_date"].values[0]
+            try:
+                member_on_db_last_update_date = pd.to_datetime(raw_val)
+            except Exception:
+                member_on_db_last_update_date = raw_val
+
+            is_updated = (
+                "Sim"
+                if member_on_db_last_update_date is not None
+                and member_on_db_last_update_date
+                > pd.to_datetime(form_row_register_date, format="%d/%m/%Y %H:%M:%S")
+                else "Não"
+            )
 
         results.append(
             {
-                "Data de Registro Google Form": form_row_register_date,
-                "Nome Google Form": form_row_person_name,
-                "Nome no Banco": matched_name if matched_name else "Não encontrado",
+                "Atualizado": is_updated,
                 "Score Similaridade": score,
+                "Nome no Google Form": form_row_person_name,
+                "Nome no Banco de dados": (
+                    matched_name if matched_name else "Não encontrado"
+                ),
+                "Data de Registro Google Form": form_row_register_date,
+                "Última Atualização no Banco de dados": member_on_db_last_update_date.strftime(
+                    "%d/%m/%Y %H:%M:%S"
+                ),
+                "Número de telefone (WhatsApp)": (
+                    form_row_phone_number if form_row_phone_number else ""
+                ),
+                "Data de nascimento": form_row_birth_date,
+                "Data de conversão": form_row_conversion_date,
+                "Data de batismo": form_row_baptism_date,
+                "E-mail": form_row_email,
+                "Foto": form_row_picture_url,
+                "É casado?": form_row_is_married,
+                "Data de casamento": form_row_marriage_date,
+                "Nome do cônjuge": form_row_partner_name,
+                "Cônjuge é membro ou congregado da IBC?": form_row_partner_is_member,
             }
         )
 
@@ -83,14 +135,19 @@ with tab1:
 
     df_results = pd.DataFrame(results)
 
-    st.subheader("Resultados do Matching")
-    score_threshold = st.slider("Similaridade mínima", 0, 100, match_names_threshold)
+    st.subheader("Resultados da Correspondência de Nomes")
 
-    st.dataframe(df_results[df_results["Score Similaridade"] >= score_threshold])
+    def highlight_updated(row):
+        color = "#d4f8e8" if row.get("Atualizado") == "Sim" else "#f8d4d4"
+        return [f"background-color: {color}" for _ in row.index]
+
+    styled = df_results.style.apply(highlight_updated, axis=1)
+
+    st.dataframe(styled, hide_index=True)
 
     st.write(
-        "📊 Quantos matches encontrados:",
-        df_results["Nome no Banco"].ne("Não encontrado").sum(),
+        "📊 Correspondências de nomes encontrados por similaridade:",
+        df_results["Nome no Banco de dados"].ne("Não encontrado").sum(),
     )
 
     df_members_classes = get_members_classes()
@@ -121,7 +178,7 @@ with tab1:
         by="Data de Registro", na_position="last", ascending=False
     )
 
-    st.dataframe(df_member_classes_sorted)
+    st.dataframe(df_member_classes_sorted, hide_index=True)
 
     st.write(
         "📊 Total de membros com classes:",
@@ -162,7 +219,8 @@ with tab1:
                 "members_completed": "Membros que Atualizaram",
                 "percent_completed": "Percentual de Membros que Atualizaram",
             }
-        )
+        ),
+        hide_index=True,
     )
 
 with tab2:
@@ -206,7 +264,7 @@ with tab2:
         ),
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 with tab3:
     st.title("📊 Percentual de Membros por Classe")
@@ -251,4 +309,4 @@ with tab3:
         ),
     )
 
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig2, width="stretch")
