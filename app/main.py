@@ -9,6 +9,7 @@ import plotly.express as px
 from app.db import get_members, get_members_classes
 from app.forms import get_google_form
 from app.matching_names import match_names
+from app.utils import is_register_updated
 
 st.set_page_config(
     page_title="Dashboard IBC", layout="wide", initial_sidebar_state="expanded"
@@ -86,12 +87,19 @@ with tab1:
             except Exception:
                 member_on_db_last_update_date = raw_val
 
-            is_updated = (
-                "Sim"
-                if member_on_db_last_update_date is not None
-                and member_on_db_last_update_date
-                > pd.to_datetime(form_row_register_date, format="%d/%m/%Y %H:%M:%S")
-                else "Não"
+            is_updated = is_register_updated(
+                {
+                    "last_update_date": member_on_db_last_update_date,
+                    "birth_date": member_on_db["date_of_birth"].values[0],
+                    "conversion_date": member_on_db["conversion_date"].values[0],
+                    "baptism_date": member_on_db["baptism_date"].values[0],
+                },
+                {
+                    "register_date": form_row_register_date,
+                    "birth_date": form_row_birth_date,
+                    "conversion_date": form_row_conversion_date,
+                    "baptism_date": form_row_baptism_date,
+                },
             )
 
         results.append(
