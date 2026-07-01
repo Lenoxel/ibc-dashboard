@@ -6,7 +6,12 @@ sys.path.append(str(Path(__file__).parent.parent.resolve()))
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from app.db import get_members, get_members_classes
+from app.db import (
+    get_members,
+    get_members_classes,
+    get_member_id_by_name,
+    update_member_from_form,
+)
 from app.forms import get_google_form
 from app.matching_names import match_names
 from app.utils import is_register_updated
@@ -58,6 +63,8 @@ with tab1:
     results = []
     found_members = []
 
+    members_updated_in_db = 0
+
     for _, form_row in df_forms.iterrows():
         form_row_person_name = form_row["Nome"].strip()
 
@@ -70,7 +77,14 @@ with tab1:
         form_row_picture_url = form_row["Foto"]
         form_row_is_married = form_row["É casado?"]
         form_row_marriage_date = form_row["Data de casamento"]
-        form_row_partner_name = form_row["Nome do cônjuge"]
+
+        raw_partner_name = form_row["Nome do cônjuge"]
+        form_row_partner_name = (
+            " ".join(str(raw_partner_name).split())
+            if pd.notna(raw_partner_name) and str(raw_partner_name).strip()
+            else None
+        )
+
         form_row_partner_is_member = form_row["Cônjuge é membro ou congregado da IBC?"]
 
         matched_name, score = match_names(
@@ -80,6 +94,7 @@ with tab1:
         member_on_db = df_members.loc[df_members["name"] == matched_name]
 
         member_on_db_last_update_date = None
+
         if not member_on_db.empty:
             raw_val = member_on_db["last_updated_date"].values[0]
             try:
@@ -115,7 +130,9 @@ with tab1:
                     "%d/%m/%Y %H:%M:%S"
                 ),
                 "Número de telefone (WhatsApp)": (
-                    form_row_phone_number if form_row_phone_number else ""
+                    str(form_row_phone_number)
+                    if pd.notna(form_row_phone_number) and form_row_phone_number
+                    else ""
                 ),
                 "Data de nascimento": form_row_birth_date,
                 "Data de conversão": form_row_conversion_date,
@@ -130,9 +147,10 @@ with tab1:
         )
 
         if matched_name:
-            member_id = df_members.loc[df_members["name"] == matched_name, "id"].values[
-                0
-            ]
+            member_id = int(
+                df_members.loc[df_members["name"] == matched_name, "id"].values[0]
+            )
+
             found_members.append(
                 {
                     "member_id": member_id,
@@ -140,6 +158,47 @@ with tab1:
                     "form_register_date": form_row_register_date,
                 }
             )
+
+            if score >= 90 and is_updated == "Não" and members_updated_in_db < 0:
+                print(f"updating data in DB for member: {matched_name}")
+
+                spouse_is_member = (
+                    str(form_row_partner_is_member).strip().lower() == "sim"
+                )
+                spouse_data = {
+                    "is_married": str(form_row_is_married).strip().lower() == "sim",
+                    "union_date": form_row_marriage_date,
+                }
+
+                if spouse_data["is_married"]:
+                    if spouse_is_member:
+                        spouse_data["spouse_member_id"] = get_member_id_by_name(
+                            form_row_partner_name
+                        )
+                        spouse_data["spouse_external_name"] = None
+                    else:
+                        spouse_data["spouse_member_id"] = None
+                        spouse_data["spouse_external_name"] = (
+                            form_row_partner_name if form_row_partner_name else None
+                        )
+                    print(f"spouse_data: {spouse_data}")
+
+                update_member_from_form(
+                    member_id,
+                    {
+                        "whatsapp": form_row_phone_number,
+                        "email": form_row_email,
+                        "picture_url": form_row_picture_url,
+                        "birth_date": form_row_birth_date,
+                        "conversion_date": form_row_conversion_date,
+                        "baptism_date": form_row_baptism_date,
+                    },
+                    spouse_data=spouse_data,
+                )
+
+                print(f"Data updated in DB for member: {matched_name}")
+
+                members_updated_in_db += 1
 
     df_results = pd.DataFrame(results)
 
